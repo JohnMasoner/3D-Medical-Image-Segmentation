@@ -7,20 +7,26 @@ from tqdm import tqdm
 import sys
 
 import torch
-import torchvision
-import albumentations as A
+import torchio
+
+from transforms import RandomCrop
 
 class MedDataSets3D(torch.utils.data.Dataset):
-    def __init__(self, img_dir, transform=None):
+    def __init__(self, img_dir, transform=False):
         self.transform = transform
         self.file_dir = glob.glob(
             os.path.join(img_dir,'*/CT')
-        )
+        )[:2]
     
     def __getitem__(self, idx):
         img, msk = self.read_img(self.file_dir[idx], 'GTV-NP')
-
-        sample = {"image": torch.FloatTensor(img).unsqueeze(0), "label": torch.FloatTensor(msk).unsqueeze(0)}
+        # tsf = self.transf(image=img.astype('uint8'), mask=msk)
+        # img, msk = tsf['image'], tsf['mask']
+        # sample = {"image": img.astype(np.float32), "label": msk.astype(np.float32)}
+        trans = RandomCrop(512,512,32)
+        img, msk = trans(img, msk)
+        print(img.shape)
+        sample = {"image": img, "label": msk}
         if self.transform:
             sample = self.transform(sample)
         return sample
@@ -46,9 +52,11 @@ class MedDataSets3D(torch.utils.data.Dataset):
             image = image_transform(image, clip_percent=[1, 99])
             label_list.append(label)
             img_list.append(image)
-        label_list = np.vstack(label_list)
-        image = np.vstack(img_list)
-        print(label_list.shape)
+        label_list = np.vstack(label_list)[:,:,:,np.newaxis]
+        image = np.vstack(img_list)[:,:,:,np.newaxis]
+        print(label_list.shape, image.shape)
+        image = torch.from_numpy(image)
+        label_list = torch.from_numpy(label_list)
         return image, label_list
 
 if __name__ == '__main__':

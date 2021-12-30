@@ -42,13 +42,13 @@ def read_img(filename, msk_type):
         image = image_transform(image, clip_percent=[1, 99])
         label_list.append(label)
         img_list.append(image)
-    label_list = np.vstack(label_list)[np.newaxis,:].transpose((1,2,3,0))
-    image = np.vstack(img_list)[np.newaxis,:].transpose((1,2,3,0))
+    label_list = np.vstack(label_list)[:,:,:,np.newaxis]
+    image = np.vstack(img_list)[:,:,:,np.newaxis]
     return image, label_list
 
 image, label_list = read_img(r'E:\Process_Data\Bai^Li ping-RT180669\CT','GTV-NP')
 print(image.shape, label_list.shape)
-for i in label_list:
+for i in image:
     print(i.shape)
     cv2.imshow('im',i)
     cv2.waitKey()
