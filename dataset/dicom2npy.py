@@ -37,18 +37,18 @@ def read_img(filename, msk_type):
     label_list = []
     img_list = []
     for img_sitk in img_sitks:
-        label = rtstruct2stencil(img_sitk, ds, roi_names=[msk_type,'GTV'])[:,:,:,0].astype(np.float32)
+        label = rtstruct2stencil(img_sitk, ds, roi_names=[msk_type])[:,:,:,0].astype(np.float32)
         image = sitk.GetArrayFromImage(img_sitk)
         image = image_transform(image, clip_percent=[1, 99])
-        print(label.shape)
         label_list.append(label)
         img_list.append(image)
-    label_list = np.vstack(label_list)
-    image = np.vstack(img_list)
-    print(label_list.shape)
+    label_list = np.vstack(label_list)[np.newaxis,:].transpose((1,2,3,0))
+    image = np.vstack(img_list)[np.newaxis,:].transpose((1,2,3,0))
     return image, label_list
 
 image, label_list = read_img(r'E:\Process_Data\Bai^Li ping-RT180669\CT','GTV-NP')
+print(image.shape, label_list.shape)
 for i in label_list:
+    print(i.shape)
     cv2.imshow('im',i)
     cv2.waitKey()

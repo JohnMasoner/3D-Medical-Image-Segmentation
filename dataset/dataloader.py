@@ -10,7 +10,25 @@ import torch
 import torchvision
 import albumentations as A
 
-def read_img(filename, msk_type):
+class MedDataSets3D(torch.utils.data.Dataset):
+    def __init__(self, img_dir, transform=None):
+        self.transform = transform
+        self.file_dir = glob.glob(
+            os.path.join(img_dir,'*/CT')
+        )
+    
+    def __getitem__(self, idx):
+        img, msk = self.read_img(self.file_dir[idx], 'GTV-NP')
+
+        sample = {"image": torch.FloatTensor(img).unsqueeze(0), "label": torch.FloatTensor(msk).unsqueeze(0)}
+        if self.transform:
+            sample = self.transform(sample)
+        return sample
+
+    def __len__(self):
+        return len(self.file_dir)
+    
+    def read_img(self, filename, msk_type):
         ''' read medical image
         Args:
             filename: the child data file directory
@@ -23,10 +41,9 @@ def read_img(filename, msk_type):
         label_list = []
         img_list = []
         for img_sitk in img_sitks:
-            label = rtstruct2stencil(img_sitk, ds, roi_names=[msk_type,'GTV'])[:,:,:,0].astype(np.float32)
+            label = rtstruct2stencil(img_sitk, ds, roi_names=msk_type)[:,:,:,0].astype(np.float32)
             image = sitk.GetArrayFromImage(img_sitk)
             image = image_transform(image, clip_percent=[1, 99])
-            print(label.shape)
             label_list.append(label)
             img_list.append(image)
         label_list = np.vstack(label_list)
@@ -34,21 +51,8 @@ def read_img(filename, msk_type):
         print(label_list.shape)
         return image, label_list
 
-
-
-class MedDataSets3D(torch.utils.data.Dataset):
-    def __init__(self, img_dir, transform=None):
-        self.transforms = transform
-        self.file_dir = glob.glob(
-            os.path.join(img_dir,'*')
-        )
-    
-    def __len__(self):
-        return len(self.file_dir)
-    
-    def __getitem__(self, idx):
-        img, msk = read_img(self.file_dir[idx], 'GTV-NP')
-        sample = {"image": img, "label": msk}
-        if self.transform:
-            sample = self.transform(sample)
-        return sample
+if __name__ == '__main__':
+    train_data = MedDataSets3D('E:/Process_Data')
+    train_dl = torch.utils.data.DataLoader(train_data, 1, True, num_workers=1)
+    for i, sample in enumerate(train_dl):
+        print(i,type(sample))
