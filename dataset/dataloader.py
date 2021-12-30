@@ -1,22 +1,20 @@
-from file import *
+from .file import *
 import SimpleITK as sitk
-from image  import *
-from visualizer import *
+from .image  import *
+from .visualizer import *
 import glob
-from tqdm import tqdm
-import sys
+
 
 import torch
-import torchio
 
-from transforms import RandomCrop
+from .transforms import RandomCrop
 
 class MedDataSets3D(torch.utils.data.Dataset):
-    def __init__(self, img_dir, transform=False):
+    def __init__(self, img_dir, transform=False,length = (None,None)):
         self.transform = transform
         self.file_dir = glob.glob(
             os.path.join(img_dir,'*/CT')
-        )[:2]
+        )[length[0]:length[-1]]
     
     def __getitem__(self, idx):
         img, msk = self.read_img(self.file_dir[idx], 'GTV-NP')
@@ -26,7 +24,8 @@ class MedDataSets3D(torch.utils.data.Dataset):
         trans = RandomCrop(512,512,32)
         img, msk = trans(img, msk)
         print(img.shape)
-        sample = {"image": img, "label": msk}
+        # sample = {"image": torch.trans(img,3,0), "label": msk}
+        sample = {"image": torch.transpose(img,3,0), "label": torch.transpose(msk,3,0)}
         if self.transform:
             sample = self.transform(sample)
         return sample

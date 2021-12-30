@@ -13,10 +13,10 @@ from PIL import Image
 from tensorboard.compat.proto.summary_pb2 import Summary
 from torch.utils.tensorboard import SummaryWriter
 
-# from . import file as mtfile
-# from . import image as mtimage
-import file as mtfile
-import image as mtimage
+from . import file as mtfile
+from . import image as mtimage
+# import file as mtfile
+# import image as mtimage
 
 
 def get_color(c, x, max_):
