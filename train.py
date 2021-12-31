@@ -8,15 +8,14 @@ from tqdm import tqdm
 from hparam import hparams as hp
 
 from models.unet3d import UNet3D
-
+from models.unetr import UNETR
+from models.residual_unet3d import UNet
 from utils import  metrics
 import os
 import numpy as np
 # from collections import OrderedDict
 from utils.logger import MyWriter
-
-def train(model, train_loder, optimizer, loss_func, n_labels, alpha):
-    pass
+os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
 
 def main(resume=False):
     checkpoint_dir = "{}/{}".format(hp.checkpoints, hp.name)
@@ -26,7 +25,9 @@ def main(resume=False):
     writer = MyWriter("{}/{}".format(hp.log, hp.name))
 
     # load model
-    model = UNet3D().cuda()
+    # model = UNet3D().cuda()
+    # model = UNETR(img_shape=(hp.crop_or_pad_size), input_dim=1, output_dim=1).cuda()
+    model = UNet(1,1,2)
     model = torch.nn.DataParallel(model, device_ids=hp.devicess)
 
     # dice loss
@@ -67,7 +68,7 @@ def main(resume=False):
     train_dataset = MedDataSets3D('E:/Process_Data', length = (0,-25))
     train_dl = torch.utils.data.DataLoader(train_dataset, batch_size = hp.batch_size, num_workers=hp.num_workers, shuffle=True)
     validate_dataset = MedDataSets3D('E:/Process_Data', length = (-25,None))
-    validate_dl = torch.utils.data.DataLoader(train_dataset, batch_size = hp.batch_size, num_workers=hp.num_workers, shuffle=True)
+    validate_dl = torch.utils.data.DataLoader(validate_dataset, batch_size = hp.batch_size, num_workers=hp.num_workers, shuffle=True)
 
     step = 0
     for epoch in range(start_epoch, hp.num_epochs):
@@ -75,7 +76,7 @@ def main(resume=False):
         print("-" * 10)
 
         # step the learning rate scheduler
-        lr_scheduler.step()
+
 
         # load eval functions
         # instantiate teh metrics 
@@ -140,6 +141,7 @@ def main(resume=False):
                 print("Saved checkpoint to: %s" % save_path)
 
             step += 1
+        lr_scheduler.step()
 
 def validation(valid_loader, model, criterion, logger, step):
 
@@ -154,8 +156,8 @@ def validation(valid_loader, model, criterion, logger, step):
     for idx, data in enumerate(tqdm(valid_loader, desc="validation")):
 
         # get the inputs and wrap in Variable
-        inputs = data["sat_img"].cuda()
-        labels = data["map_img"].cuda()
+        inputs = data["image"].cuda()
+        labels = data["label"].cuda()
 
         # forward
         # prob_map = model(inputs) # last activation was a sigmoid
