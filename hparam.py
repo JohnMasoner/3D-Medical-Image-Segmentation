@@ -4,7 +4,7 @@ class hparams:
     name = 'test'
     logging_step = 100
     validation_interval =  2000
-    crop_or_pad_size = 512,512,32   # W,H,D
+    # crop_or_pad_size = 512,512,32   # W,H,D
 
     # optimizer parameters
     lr = 0.001

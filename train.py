@@ -87,6 +87,7 @@ def main(resume=False):
         loader = tqdm(train_dl, desc="training")
         for idx, data in enumerate(loader):
             # get the inputs and wrap in Variable
+            print(type(data["image"]))
             inputs = data["image"].cuda()
             labels = data["label"].cuda()
 
@@ -98,6 +99,9 @@ def main(resume=False):
             # outputs = (prob_map > 0.3).float()
             outputs = model(inputs)
             # outputs = torch.nn.functional.sigmoid(outputs)
+
+            outputs = torch.sigmoid(outputs)
+            assert (outputs.shape == labels.shape)
 
             loss = criterion(outputs, labels)
 

@@ -1,3 +1,5 @@
+import sys
+sys.path.append('./')
 from re import L
 from SimpleITK.SimpleITK import Mask
 import sys
@@ -7,7 +9,6 @@ from image  import *
 from visualizer import *
 import glob
 from tqdm import tqdm
-import sys
 
 
 
@@ -48,7 +49,6 @@ def read_img(filename, msk_type):
 
 image, label_list = read_img(r'E:\Process_Data\Bai^Li ping-RT180669\CT','GTV-NP')
 print(image.shape, label_list.shape)
-for i in image:
-    print(i.shape)
-    cv2.imshow('im',i)
-    cv2.waitKey()
+for i,info in enumerate(label_list):
+    if info > 0:
+        print(i)

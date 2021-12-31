@@ -4,7 +4,6 @@ from .image  import *
 from .visualizer import *
 import glob
 
-
 import torch
 
 from .transforms import RandomCrop
@@ -45,18 +44,33 @@ class MedDataSets3D(torch.utils.data.Dataset):
         ds, _ = find_one_rs_file(filename)
         label_list = []
         img_list = []
+        # bc the img_sitks is nonuniform ,the img_sitk is a list for the image info
         for img_sitk in img_sitks:
             label = rtstruct2stencil(img_sitk, ds, roi_names=msk_type)[:,:,:,0].astype(np.float32)
             image = sitk.GetArrayFromImage(img_sitk)
             image = image_transform(image, clip_percent=[1, 99])
             label_list.append(label)
             img_list.append(image)
+        # get any numpy.ndarry have to concat the ndarry
         label_list = np.vstack(label_list)[:,:,:,np.newaxis]
+        # the data shape is D,W,H,C
         image = np.vstack(img_list)[:,:,:,np.newaxis]
-        print(label_list.shape, image.shape)
         image = torch.from_numpy(image)
         label_list = torch.from_numpy(label_list)
         return image, label_list
+    
+    def crop_slices(self, label_list):
+        ''' *crop the img and msk based on label*
+        Args:
+            label_list: the label: numpy.ndarry
+        Return:
+            label_slices_the(list): the up loop and end loop
+        '''
+        label_slices = [i for i,info in enumerate(label_list) if info.any()>0 ]
+        length_label = len(label_slices)
+        new_crop_slices = 32 - length_label
+        label_slices_the = [label_slices[0]-int(new_crop_slices/2)-1, label_slices[-1] + int(new_crop_slices/2)+1]
+        return label_slices_the
 
 if __name__ == '__main__':
     train_data = MedDataSets3D('E:/Process_Data')

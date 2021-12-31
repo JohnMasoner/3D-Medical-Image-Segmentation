@@ -64,16 +64,19 @@ def jaccard_index(input, target):
 def dice_coeff(input, target):
     num_in_target = input.size(0)
 
-    smooth = 1.0
+    # smooth = 1.0
 
     pred = input.view(num_in_target, -1)
     truth = target.view(num_in_target, -1)
 
-    intersection = (pred * truth).sum(1)
+    # intersection = (pred * truth).sum(1)
 
-    loss = (2.0 * intersection + smooth) / (pred.sum(1) + truth.sum(1) + smooth)
+    # loss = (2.0 * intersection + smooth) / (pred.sum(1) + truth.sum(1) + smooth)
+    dice_coef = (2.0 * (pred * truth).double().sum() + 1) / (
+            pred.double().sum() + truth.double().sum() + 1
+        )
 
-    return loss.mean().item()
+    return dice_coef.mean().item()
 
 
 

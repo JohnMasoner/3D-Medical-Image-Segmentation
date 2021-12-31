@@ -65,6 +65,19 @@ class RandomCrop:
         rand_d_st = random.randint(self.size_D, ori_size[0] - self.size_D)
         rand_d_ed = rand_d_st - self.size_D
         return rand_w_st, rand_w_ed, rand_h_st, rand_h_ed, rand_d_st, rand_d_ed
+    
+    def crop_slices(self, label_list):
+        ''' *crop the img and msk based on label*
+        Args:
+            label_list: the label: numpy.ndarry
+        Return:
+            label_slices_the(list): the up loop and end loop
+        '''
+        label_slices = [i for i,info in enumerate(label_list) if info.any()>0 ]
+        length_label = len(label_slices)
+        new_crop_slices = 32 - length_label
+        label_slices_the = [label_slices[0]-int(new_crop_slices/2)-1, label_slices[-1] + int(new_crop_slices/2)+1]
+        return label_slices_the
 
     def __call__(self, img, msk):
         rand_w_st, rand_w_ed, rand_h_st, rand_h_ed, rand_d_st, rand_d_ed = self.get_range(
