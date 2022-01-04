@@ -1,4 +1,5 @@
 class hparams:
+    filedir = 'E:/Process_Data'
     checkpoints = 'checkpoints'
     log = "logs"
     name = 'test'

@@ -1,5 +1,5 @@
 from pydicom.sequence import validate_dataset
-from dataset.dataloader import MedDataSets3D
+from dataset import dataloader
 
 from torch.utils.data import DataLoader
 import torch
@@ -12,6 +12,7 @@ from models.unetr import UNETR
 from models.residual_unet3d import UNet
 from utils import  metrics
 import os
+from torchvision import transforms
 import numpy as np
 # from collections import OrderedDict
 from utils.logger import MyWriter
@@ -29,6 +30,7 @@ def main(resume=False):
     # model = UNETR(img_shape=(hp.crop_or_pad_size), input_dim=1, output_dim=1).cuda()
     model = UNet(1,1,2)
     model = torch.nn.DataParallel(model, device_ids=hp.devicess)
+    model.train()
 
     # dice loss
     criterion = metrics.DiceLoss()
@@ -65,10 +67,12 @@ def main(resume=False):
             print("=> no checkpoint found at '{}'".format(resume))
     
     # load data
-    train_dataset = MedDataSets3D('E:/Process_Data', length = (0,-25))
+    train_dataset = dataloader.MedDataSets3D(hp.filedir, transform=transforms.Compose([dataloader.ToTensorTarget()]), length = (0,-25))
     train_dl = torch.utils.data.DataLoader(train_dataset, batch_size = hp.batch_size, num_workers=hp.num_workers, shuffle=True)
-    validate_dataset = MedDataSets3D('E:/Process_Data', length = (-25,None))
+    validate_dataset = dataloader.MedDataSets3D(hp.filedir, transform=transforms.Compose([dataloader.ToTensorTarget()]), length = (-25,None))
     validate_dl = torch.utils.data.DataLoader(validate_dataset, batch_size = hp.batch_size, num_workers=hp.num_workers, shuffle=True)
+
+    model.train()
 
     step = 0
     for epoch in range(start_epoch, hp.num_epochs):
@@ -88,8 +92,8 @@ def main(resume=False):
         for idx, data in enumerate(loader):
             # get the inputs and wrap in Variable
             print(type(data["image"]))
-            inputs = data["image"].cuda()
-            labels = data["label"].cuda()
+            inputs = data["image"].type(torch.FloatTensor).cuda()
+            labels = data["label"].type(torch.FloatTensor).cuda()
 
             # zero the parameter gradients
             optimizer.zero_grad()
@@ -98,8 +102,6 @@ def main(resume=False):
             # prob_map = model(inputs) # last activation was a sigmoid
             # outputs = (prob_map > 0.3).float()
             outputs = model(inputs)
-            # outputs = torch.nn.functional.sigmoid(outputs)
-
             outputs = torch.sigmoid(outputs)
             assert (outputs.shape == labels.shape)
 
@@ -160,14 +162,14 @@ def validation(valid_loader, model, criterion, logger, step):
     for idx, data in enumerate(tqdm(valid_loader, desc="validation")):
 
         # get the inputs and wrap in Variable
-        inputs = data["image"].cuda()
-        labels = data["label"].cuda()
+        inputs = data["image"].type(torch.FloatTensor).cuda()
+        labels = data["label"].type(torch.FloatTensor).cuda()
 
         # forward
         # prob_map = model(inputs) # last activation was a sigmoid
         # outputs = (prob_map > 0.3).float()
         outputs = model(inputs)
-        # outputs = torch.nn.functional.sigmoid(outputs)
+        outputs = torch.sigmoid(outputs)
 
         loss = criterion(outputs, labels)
 
@@ -178,7 +180,6 @@ def validation(valid_loader, model, criterion, logger, step):
     logger.log_validation(valid_loss.avg, valid_acc.avg, step)
 
     print("Validation Loss: {:.4f} Acc: {:.4f}".format(valid_loss.avg, valid_acc.avg))
-    model.train()
     return {"valid_loss": valid_loss.avg, "valid_acc": valid_acc.avg}
 
 if __name__ == "__main__":

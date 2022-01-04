@@ -58,11 +58,11 @@ class RandomCrop:
 
     def get_range(self, ori_size: tuple):
         # ori_size: D,W,H,C
-        rand_w_st = random.randint(self.size_W, ori_size[1] - self.size_W)
+        rand_w_st = random.randint(self.size_W, ori_size[1])
         rand_w_ed = rand_w_st - self.size_W
-        rand_h_st = random.randint(self.size_H, ori_size[2] - self.size_H)
+        rand_h_st = random.randint(self.size_H, ori_size[2])
         rand_h_ed = rand_h_st - self.size_H
-        rand_d_st = random.randint(self.size_D, ori_size[0] - self.size_D)
+        rand_d_st = random.randint(self.size_D, ori_size[0])
         rand_d_ed = rand_d_st - self.size_D
         return rand_w_st, rand_w_ed, rand_h_st, rand_h_ed, rand_d_st, rand_d_ed
     
@@ -80,11 +80,13 @@ class RandomCrop:
         return label_slices_the
 
     def __call__(self, img, msk):
-        rand_w_st, rand_w_ed, rand_h_st, rand_h_ed, rand_d_st, rand_d_ed = self.get_range(
+        # label_slices_the = self.crop_slices(msk)
+        rand_w_ed, rand_w_st, rand_h_ed, rand_h_st, rand_d_ed, rand_d_st = self.get_range(
             img.shape)
+        # rand_d_st, rand_d_ed = label_slices_the[0], label_slices_the[-1]
         tmp_img = torch.zeros(self.size_D, self.size_W, self.size_W,1)
         tmp_msk = tmp_img
-        tmp_img[rand_d_st:rand_d_ed, rand_w_st:rand_w_ed, rand_h_st:rand_h_ed, :] = img[rand_d_st:rand_d_ed, rand_w_st:rand_w_ed, rand_h_st:rand_h_ed, :]
-        tmp_msk[rand_d_st:rand_d_ed, rand_w_st:rand_w_ed, rand_h_st:rand_h_ed, :] = msk[rand_d_st:rand_d_ed, rand_w_st:rand_w_ed, rand_h_st:rand_h_ed, :]
+        tmp_img = img[rand_d_st:rand_d_ed, rand_w_st:rand_w_ed, rand_h_st:rand_h_ed, :]
+        tmp_msk = msk[rand_d_st:rand_d_ed, rand_w_st:rand_w_ed, rand_h_st:rand_h_ed, :]
 
         return tmp_img, tmp_msk

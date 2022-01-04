@@ -5,14 +5,14 @@ from .visualizer import *
 import glob
 
 import torch
-
-from .transforms import RandomCrop
+from torchvision import transforms
+from .transforms import RandomCrop, Compose, Normalize
 
 class MedDataSets3D(torch.utils.data.Dataset):
     def __init__(self, img_dir, transform=False,length = (None,None)):
         self.transform = transform
         self.file_dir = glob.glob(
-            os.path.join(img_dir,'*/CT')
+            os.path.join(img_dir,'*')
         )[length[0]:length[-1]]
     
     def __getitem__(self, idx):
@@ -23,7 +23,6 @@ class MedDataSets3D(torch.utils.data.Dataset):
         trans = RandomCrop(512,512,32)
         img, msk = trans(img, msk)
         print(img.shape)
-        # sample = {"image": torch.trans(img,3,0), "label": msk}
         sample = {"image": torch.transpose(img,3,0), "label": torch.transpose(msk,3,0)}
         if self.transform:
             sample = self.transform(sample)
