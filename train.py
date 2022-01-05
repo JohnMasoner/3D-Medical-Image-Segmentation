@@ -75,6 +75,7 @@ def main(resume=False):
     model.train()
 
     step = 0
+    scaler = torch.cuda.amp.GradScaler()
     for epoch in range(start_epoch, hp.num_epochs):
         print("Epoch {}/{}".format(epoch, hp.num_epochs - 1))
         print("-" * 10)
@@ -98,17 +99,16 @@ def main(resume=False):
             optimizer.zero_grad()
 
             # forward
-            # prob_map = model(inputs) # last activation was a sigmoid
-            # outputs = (prob_map > 0.3).float()
-            outputs = model(inputs)
-            outputs = torch.sigmoid(outputs)
-            assert (outputs.shape == labels.shape)
-
-            loss = criterion(outputs, labels)
+            with torch.cuda.amp.autocast():
+                outputs = model(inputs).squeeze()
+                outputs = torch.sigmoid(outputs)
+                assert (outputs.shape == labels.shape)
+                loss = criterion(outputs, labels)
 
             # backward
-            loss.backward()
-            optimizer.step()
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
 
             train_acc.update(metrics.dice_coeff(outputs, labels), outputs.size(0))
             train_loss.update(loss.data.item(), outputs.size(0))
@@ -146,7 +146,7 @@ def main(resume=False):
         print("Saved checkpoint to: %s" % save_path)
         lr_scheduler.step()
 
-def validation(valid_loader, model, criterion, logger, step):
+def validation(valid_loader, model, criterion, logger, step, scaler):
 
     # logging accuracy and loss
     valid_acc = metrics.MetricTracker()
@@ -163,12 +163,11 @@ def validation(valid_loader, model, criterion, logger, step):
         labels = data["label"].type(torch.FloatTensor).cuda()
 
         # forward
-        # prob_map = model(inputs) # last activation was a sigmoid
-        # outputs = (prob_map > 0.3).float()
-        outputs = model(inputs)
-        outputs = torch.sigmoid(outputs)
-
-        loss = criterion(outputs, labels)
+        with torch.cuda.amp.autocast():
+                outputs = model(inputs).squeeze()
+                outputs = torch.sigmoid(outputs)
+                assert (outputs.shape == labels.shape)
+                loss = criterion(outputs, labels)
 
         valid_acc.update(metrics.dice_coeff(outputs, labels), outputs.size(0))
         valid_loss.update(loss.data.item(), outputs.size(0))
