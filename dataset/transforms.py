@@ -51,10 +51,11 @@ class RandomRotate:
 
 
 class RandomCrop:
-    def __init__(self, size_W, size_H, size_D):
-        self.size_W = size_W
-        self.size_H = size_H
-        self.size_D = size_D
+    def __init__(self, rand_crop_size, n=1):
+        self.size_W = rand_crop_size[0]
+        self.size_H = rand_crop_size[1]
+        self.size_D = rand_crop_size[2]
+        self.n = n
 
     def get_range(self, ori_size: tuple):
         # ori_size: D,W,H,C
@@ -81,12 +82,16 @@ class RandomCrop:
 
     def __call__(self, img, msk):
         # label_slices_the = self.crop_slices(msk)
-        rand_w_ed, rand_w_st, rand_h_ed, rand_h_st, rand_d_ed, rand_d_st = self.get_range(
-            img.shape)
-        # rand_d_st, rand_d_ed = label_slices_the[0], label_slices_the[-1]
-        tmp_img = torch.zeros(self.size_D, self.size_W, self.size_W,1)
-        tmp_msk = tmp_img
-        tmp_img = img[rand_d_st:rand_d_ed, rand_w_st:rand_w_ed, rand_h_st:rand_h_ed, :]
-        tmp_msk = msk[rand_d_st:rand_d_ed, rand_w_st:rand_w_ed, rand_h_st:rand_h_ed, :]
+        img_list, msk_list = [], []
+        for i in range(self.n):
+            rand_w_ed, rand_w_st, rand_h_ed, rand_h_st, rand_d_ed, rand_d_st = self.get_range(
+                img.shape)
+            # rand_d_st, rand_d_ed = label_slices_the[0], label_slices_the[-1]
+            tmp_img = torch.zeros(self.size_D, self.size_W, self.size_W,1)
+            tmp_msk = tmp_img
+            tmp_img = img[rand_d_st:rand_d_ed, rand_w_st:rand_w_ed, rand_h_st:rand_h_ed, :]
+            tmp_msk = msk[rand_d_st:rand_d_ed, rand_w_st:rand_w_ed, rand_h_st:rand_h_ed, :]
+            img_list.append(tmp_img)
+            msk_list.append(tmp_msk)
 
-        return tmp_img, tmp_msk
+        return img_list, msk_list

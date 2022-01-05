@@ -2,20 +2,20 @@ class hparams:
     filedir = 'E:/Process_Data'
     checkpoints = 'checkpoints'
     log = "logs"
-    name = 'test'
-    logging_step = 100
-    validation_interval =  2000
-    # crop_or_pad_size = 512,512,32   # W,H,D
+    name = '1-5test'
+    logging_step = 10
+    validation_interval =  20
+    
+    # training parameters
+    batch_size = 8
+    num_workers = 2 # number of workers
+    num_epochs = 60 # number of epochs
 
     # optimizer parameters
     lr = 0.001
-    step_size = 20
+    step_size = batch_size * 20
+    rand_crop_size = [256,256,64] # W, H, D
     gamma = 0.1
 
     #GPU parameters
-    devicess = [0]
-
-    # training parameters
-    batch_size = 1
-    num_workers = 1 # number of workers
-    num_epochs = 60 # number of epochs
+    devicess = [0,1]

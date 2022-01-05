@@ -10,9 +10,7 @@ class UNet3D(nn.Module):
         """
         Implementations based on the Unet3D paper: https://arxiv.org/abs/1606.06650
         """
-
         super(UNet3D, self).__init__()
-
         features = init_features
         self.encoder1 = UNet3D._block(in_channels, features, name="enc1")
         self.pool1 = nn.MaxPool3d(kernel_size=2, stride=2)

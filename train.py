@@ -26,14 +26,14 @@ def main(resume=False):
     writer = MyWriter("{}/{}".format(hp.log, hp.name))
 
     # load model
-    # model = UNet3D().cuda()
+    model = UNet3D()
     # model = UNETR(img_shape=(hp.crop_or_pad_size), input_dim=1, output_dim=1).cuda()
-    model = UNet(1,1,2)
-    model = torch.nn.DataParallel(model, device_ids=hp.devicess)
+    #model = UNet(1,1,2)
+    model = torch.nn.DataParallel(model, device_ids=hp.devicess).cuda()
     model.train()
 
     # dice loss
-    criterion = metrics.DiceLoss()
+    criterion = metrics.BCEDiceLoss()
     
     # init the optimizer
     # optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum, nesterov=True)
@@ -67,10 +67,10 @@ def main(resume=False):
             print("=> no checkpoint found at '{}'".format(resume))
     
     # load data
-    train_dataset = dataloader.MedDataSets3D(hp.filedir, transform=transforms.Compose([dataloader.ToTensorTarget()]), length = (0,-25))
-    train_dl = torch.utils.data.DataLoader(train_dataset, batch_size = hp.batch_size, num_workers=hp.num_workers, shuffle=True)
-    validate_dataset = dataloader.MedDataSets3D(hp.filedir, transform=transforms.Compose([dataloader.ToTensorTarget()]), length = (-25,None))
-    validate_dl = torch.utils.data.DataLoader(validate_dataset, batch_size = hp.batch_size, num_workers=hp.num_workers, shuffle=True)
+    train_dataset = dataloader.MedDataSets3D(hp.filedir, length = (0,-25))
+    train_dl = torch.utils.data.DataLoader(train_dataset, batch_size = hp.batch_size, num_workers=hp.num_workers, shuffle=False)
+    validate_dataset = dataloader.MedDataSets3D(hp.filedir, length = (-25,None))
+    validate_dl = torch.utils.data.DataLoader(validate_dataset, batch_size = hp.batch_size, num_workers=hp.num_workers, shuffle=False)
 
     model.train()
 
@@ -91,7 +91,6 @@ def main(resume=False):
         loader = tqdm(train_dl, desc="training")
         for idx, data in enumerate(loader):
             # get the inputs and wrap in Variable
-            print(type(data["image"]))
             inputs = data["image"].type(torch.FloatTensor).cuda()
             labels = data["label"].type(torch.FloatTensor).cuda()
 
@@ -122,31 +121,29 @@ def main(resume=False):
                         train_loss.avg, train_acc.avg
                     )
                 )
-
-            # validation
-            if step % hp.validation_interval == 0:
-                valid_metrics = validation(
-                    validate_dl, model, criterion, writer, step
-                )
-                save_path = os.path.join(
-                    checkpoint_dir, "%s_checkpoint_%04d.pt" % (hp.name, step)
-                )
-                # store best loss and save a model checkpoint
-                best_loss = min(valid_metrics["valid_loss"], best_loss)
-                torch.save(
-                    {
-                        "step": step,
-                        "epoch": epoch,
-                        "arch": "ResUnet",
-                        "state_dict": model.state_dict(),
-                        "best_loss": best_loss,
-                        "optimizer": optimizer.state_dict(),
-                    },
-                    save_path,
-                )
-                print("Saved checkpoint to: %s" % save_path)
-
             step += 1
+            # validation
+            # if step % hp.validation_interval == 0:
+        valid_metrics = validation(
+            validate_dl, model, criterion, writer, step
+        )
+        save_path = os.path.join(
+            checkpoint_dir, "%s_checkpoint_%04d.pt" % (hp.name, step)
+        )
+        # store best loss and save a model checkpoint
+        best_loss = min(valid_metrics["valid_loss"], best_loss)
+        torch.save(
+            {
+                "step": step,
+                "epoch": epoch,
+                "arch": "ResUnet",
+                "state_dict": model.state_dict(),
+                "best_loss": best_loss,
+                "optimizer": optimizer.state_dict(),
+            },
+            save_path,
+        )
+        print("Saved checkpoint to: %s" % save_path)
         lr_scheduler.step()
 
 def validation(valid_loader, model, criterion, logger, step):
