@@ -14,6 +14,7 @@ from utils import  metrics
 import os
 from torchvision import transforms
 import numpy as np
+from dataset.transforms import RandomCrop
 # from collections import OrderedDict
 from utils.logger import MyWriter
 os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
@@ -67,9 +68,11 @@ def main(resume=False):
             print("=> no checkpoint found at '{}'".format(resume))
     
     # load data
-    train_dataset = dataloader.MedDataSets3D(hp.filedir, length = (0,-25))
+    # DataLoader --- collate_fn = None
+    trans = RandomCrop(512,512,32)
+    train_dataset = dataloader.MedDataSets3D(hp.filedir, transform = trans,length = (0,-25))
     train_dl = torch.utils.data.DataLoader(train_dataset, batch_size = hp.batch_size, num_workers=hp.num_workers, shuffle=False)
-    validate_dataset = dataloader.MedDataSets3D(hp.filedir, length = (-25,None))
+    validate_dataset = dataloader.MedDataSets3D(hp.filedir, transform = trans, length = (-25,None))
     validate_dl = torch.utils.data.DataLoader(validate_dataset, batch_size = hp.batch_size, num_workers=hp.num_workers, shuffle=False)
 
     model.train()

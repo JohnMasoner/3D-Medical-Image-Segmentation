@@ -59,39 +59,54 @@ class RandomCrop:
 
     def get_range(self, ori_size: tuple):
         # ori_size: D,W,H,C
+        rand_d_st = random.randint(self.size_D, ori_size[0])
+        rand_d_ed = rand_d_st - self.size_D
         rand_w_st = random.randint(self.size_W, ori_size[1])
         rand_w_ed = rand_w_st - self.size_W
         rand_h_st = random.randint(self.size_H, ori_size[2])
         rand_h_ed = rand_h_st - self.size_H
-        rand_d_st = random.randint(self.size_D, ori_size[0])
-        rand_d_ed = rand_d_st - self.size_D
         return rand_w_st, rand_w_ed, rand_h_st, rand_h_ed, rand_d_st, rand_d_ed
-    
-    def crop_slices(self, label_list):
-        ''' *crop the img and msk based on label*
+
+    def crop(self,img, msk, start: int, end: int, left: int, right: int, top: int, bottom: int):
+        '''Crop the given image at specified location and output size.
         Args:
-            label_list: the label: numpy.ndarry
-        Return:
-            label_slices_the(list): the up loop and end loop
+            img (Tensor): Image to be cropped. (0,0) denotes the top left corner of the image.
+            img (Tensor): Image to be cropped. (0,0) denotes the top left corner of the mask.
+            start (int): the first layer of the crop box.
+            end (int): the last layer of the crop box.
+            left (int): Vertical component of the top left corner of the crop box.
+            right (int): Horizontal component of the top left corner of the crop box.
+            top (int): Height of the crop box.
+            bottom (int): Width of the crop box.
+        Returns:
+            crop_img (Tensor): Cropped image.
         '''
-        label_slices = [i for i,info in enumerate(label_list) if info.any()>0 ]
-        length_label = len(label_slices)
-        new_crop_slices = 32 - length_label
-        label_slices_the = [label_slices[0]-int(new_crop_slices/2)-1, label_slices[-1] + int(new_crop_slices/2)+1]
-        return label_slices_the
+        crop_img = torch.zeros(self.size_D, self.size_W, self.size_W,1)
+        crop_msk = crop_img
+        crop_img = img[start:end, left:right, top:bottom, :]
+        crop_msk = msk[start:end, left:right, top:bottom, :]
+        return crop_img, crop_msk
 
-    def __call__(self, img, msk):
-        # label_slices_the = self.crop_slices(msk)
-        img_list, msk_list = [], []
-        for i in range(self.n):
-            rand_w_ed, rand_w_st, rand_h_ed, rand_h_st, rand_d_ed, rand_d_st = self.get_range(
-                img.shape)
-            # rand_d_st, rand_d_ed = label_slices_the[0], label_slices_the[-1]
-            tmp_img = torch.zeros(self.size_D, self.size_W, self.size_W,1)
-            tmp_msk = tmp_img
-            tmp_img = img[rand_d_st:rand_d_ed, rand_w_st:rand_w_ed, rand_h_st:rand_h_ed, :]
-            tmp_msk = msk[rand_d_st:rand_d_ed, rand_w_st:rand_w_ed, rand_h_st:rand_h_ed, :]
-            img_list.append(tmp_img)
-            msk_list.append(tmp_msk)
+    def __call__(self,data):
+        img, msk = data['image'], data['label']
 
-        return img_list, msk_list
+        rand_w_ed, rand_w_st, rand_h_ed, rand_h_st, rand_d_ed, rand_d_st = self.get_range(
+            img.shape)
+        img0, msk0 = self.crop(img, msk, rand_d_st, rand_d_ed, rand_w_st, rand_w_ed, rand_h_st, rand_h_ed)
+
+        rand_w_ed, rand_w_st, rand_h_ed, rand_h_st, rand_d_ed, rand_d_st = self.get_range(
+            img.shape)
+        img1, msk1 = self.crop(img, msk, rand_d_st, rand_d_ed, rand_w_st, rand_w_ed, rand_h_st, rand_h_ed)
+
+        rand_w_ed, rand_w_st, rand_h_ed, rand_h_st, rand_d_ed, rand_d_st = self.get_range(
+            img.shape)
+        img2, msk2 = self.crop(img, msk, rand_d_st, rand_d_ed, rand_w_st, rand_w_ed, rand_h_st, rand_h_ed)
+
+        rand_w_ed, rand_w_st, rand_h_ed, rand_h_st, rand_d_ed, rand_d_st = self.get_range(
+            img.shape)
+        img3, msk3 = self.crop(img, msk, rand_d_st, rand_d_ed, rand_w_st, rand_w_ed, rand_h_st, rand_h_ed)
+
+        return {
+            'image': (img0, img1, img2, img3),
+            'label': (msk0, msk1, msk2, msk3)
+        }

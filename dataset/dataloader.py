@@ -20,9 +20,9 @@ class MedDataSets3D(torch.utils.data.Dataset):
         # tsf = self.transf(image=img.astype('uint8'), mask=msk)
         # img, msk = tsf['image'], tsf['mask']
         # sample = {"image": img.astype(np.float32), "label": msk.astype(np.float32)}
-        trans = RandomCrop(512,512,32)
-        img, msk = trans(img, msk)
-        print(img.shape)
+        # trans = RandomCrop(512,512,32)
+        # img, msk = trans(img, msk)
+        # print(img.shape)
         sample = {"image": torch.transpose(img,3,0), "label": torch.transpose(msk,3,0)}
         if self.transform:
             sample = self.transform(sample)
