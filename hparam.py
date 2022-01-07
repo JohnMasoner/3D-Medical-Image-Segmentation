@@ -14,7 +14,7 @@ class hparams:
     # optimizer parameters
     lr = 0.001
     step_size = batch_size * 20
-    rand_crop_size = [256,256,64] # W, H, D
+    rand_crop_size = 256,256,64 # W, H, D
     gamma = 0.1
 
     #GPU parameters

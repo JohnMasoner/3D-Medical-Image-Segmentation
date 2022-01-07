@@ -6,7 +6,7 @@ import glob
 
 import torch
 from torchvision import transforms
-from .transforms import RandomCrop, Compose, Normalize
+from .transforms import RandomCrop
 
 class MedDataSets3D(torch.utils.data.Dataset):
     def __init__(self, img_dir, transform=False,length = (None,None)):
@@ -26,6 +26,7 @@ class MedDataSets3D(torch.utils.data.Dataset):
         sample = {"image": torch.transpose(img,3,0), "label": torch.transpose(msk,3,0)}
         if self.transform:
             sample = self.transform(sample)
+        # sample = {"image": torch.transpose(sample['image'],3,0), "label": torch.transpose(sample['label'],3,0)}
         return sample
 
     def __len__(self):
@@ -72,7 +73,7 @@ class MedDataSets3D(torch.utils.data.Dataset):
         return label_slices_the
 
 if __name__ == '__main__':
-    train_data = MedDataSets3D('E:/Process_Data')
+    train_data = MedDataSets3D('E:/Y054/Process_Data')
     train_dl = torch.utils.data.DataLoader(train_data, 1, True, num_workers=1)
     for i, sample in enumerate(train_dl):
         print(i,type(sample))

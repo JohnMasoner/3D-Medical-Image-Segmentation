@@ -58,8 +58,8 @@ class RandomCrop:
         self.n = n
 
     def get_range(self, ori_size: tuple):
-        # ori_size: D,W,H,C
-        rand_d_st = random.randint(self.size_D, ori_size[0])
+        # ori_size: C,W,H,D
+        rand_d_st = random.randint(self.size_D, ori_size[3])
         rand_d_ed = rand_d_st - self.size_D
         rand_w_st = random.randint(self.size_W, ori_size[1])
         rand_w_ed = rand_w_st - self.size_W
@@ -83,8 +83,8 @@ class RandomCrop:
         '''
         crop_img = torch.zeros(self.size_D, self.size_W, self.size_W,1)
         crop_msk = crop_img
-        crop_img = img[start:end, left:right, top:bottom, :]
-        crop_msk = msk[start:end, left:right, top:bottom, :]
+        crop_img = img[:, left:right, top:bottom, start:end]
+        crop_msk = msk[:, left:right, top:bottom, start:end]
         return crop_img, crop_msk
 
     def __call__(self,data):

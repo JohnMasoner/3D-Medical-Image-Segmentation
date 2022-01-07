@@ -17,7 +17,8 @@ import numpy as np
 from dataset.transforms import RandomCrop
 # from collections import OrderedDict
 from utils.logger import MyWriter
-os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
+from monai.networks.nets import BasicUNet
+os.environ['CUDA_VISIBLE_DEVICES'] = '2,3'
 
 def main(resume=False):
     checkpoint_dir = "{}/{}".format(hp.checkpoints, hp.name)
@@ -27,9 +28,9 @@ def main(resume=False):
     writer = MyWriter("{}/{}".format(hp.log, hp.name))
 
     # load model
-    model = UNet3D()
+    # model = UNet3D()
     # model = UNETR(img_shape=(hp.crop_or_pad_size), input_dim=1, output_dim=1).cuda()
-    #model = UNet(1,1,2)
+    model = BasicUNet(spatial_dims=3, out_channels=1)
     model = torch.nn.DataParallel(model, device_ids=hp.devicess).cuda()
     model.train()
 
@@ -69,11 +70,11 @@ def main(resume=False):
     
     # load data
     # DataLoader --- collate_fn = None
-    trans = RandomCrop(512,512,32)
-    train_dataset = dataloader.MedDataSets3D(hp.filedir, transform = trans,length = (0,-25))
-    train_dl = torch.utils.data.DataLoader(train_dataset, batch_size = hp.batch_size, num_workers=hp.num_workers, shuffle=False)
-    validate_dataset = dataloader.MedDataSets3D(hp.filedir, transform = trans, length = (-25,None))
-    validate_dl = torch.utils.data.DataLoader(validate_dataset, batch_size = hp.batch_size, num_workers=hp.num_workers, shuffle=False)
+    trans = RandomCrop(hp.rand_crop_size)
+    train_dataset = dataloader.MedDataSets3D(hp.filedir, transform=trans, length = (0,-25))
+    train_dl = torch.utils.data.DataLoader(train_dataset, batch_size = hp.batch_size, num_workers=hp.num_workers, shuffle=False, collate_fn= col)
+    validate_dataset = dataloader.MedDataSets3D(hp.filedir, transform=trans, length = (-25,None))
+    validate_dl = torch.utils.data.DataLoader(validate_dataset, batch_size = hp.batch_size, num_workers=hp.num_workers, shuffle=False, collate_fn= col)
 
     model.train()
 
@@ -103,7 +104,7 @@ def main(resume=False):
 
             # forward
             with torch.cuda.amp.autocast():
-                outputs = model(inputs).squeeze()
+                outputs = model(inputs)
                 outputs = torch.sigmoid(outputs)
                 assert (outputs.shape == labels.shape)
                 loss = criterion(outputs, labels)
@@ -167,7 +168,7 @@ def validation(valid_loader, model, criterion, logger, step, scaler):
 
         # forward
         with torch.cuda.amp.autocast():
-                outputs = model(inputs).squeeze()
+                outputs = model(inputs)
                 outputs = torch.sigmoid(outputs)
                 assert (outputs.shape == labels.shape)
                 loss = criterion(outputs, labels)
@@ -180,6 +181,15 @@ def validation(valid_loader, model, criterion, logger, step, scaler):
 
     print("Validation Loss: {:.4f} Acc: {:.4f}".format(valid_loss.avg, valid_acc.avg))
     return {"valid_loss": valid_loss.avg, "valid_acc": valid_acc.avg}
+
+def col(batchs):
+    '''custom data batch function
+    Args:
+        batch (list(dict{img, msk})): batch
+    '''
+    image = torch.cat([torch.stack([i for i in batch['image']]) for batch in batchs])
+    label = torch.cat([torch.stack([i for i in batch['label']]) for batch in batchs])
+    return {'image':image, 'label':label}
 
 if __name__ == "__main__":
     main()
