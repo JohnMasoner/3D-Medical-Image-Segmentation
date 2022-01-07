@@ -160,27 +160,28 @@ def validation(valid_loader, model, criterion, logger, step, scaler):
     model.eval()
 
     # Iterate over data.
-    for idx, data in enumerate(tqdm(valid_loader, desc="validation")):
+    with torch.no_grad():
+        for idx, data in enumerate(tqdm(valid_loader, desc="validation")):
 
-        # get the inputs and wrap in Variable
-        inputs = data["image"].type(torch.FloatTensor).cuda()
-        labels = data["label"].type(torch.FloatTensor).cuda()
+            # get the inputs and wrap in Variable
+            inputs = data["image"].type(torch.FloatTensor).cuda()
+            labels = data["label"].type(torch.FloatTensor).cuda()
 
-        # forward
-        with torch.cuda.amp.autocast():
-                outputs = model(inputs)
-                outputs = torch.sigmoid(outputs)
-                assert (outputs.shape == labels.shape)
-                loss = criterion(outputs, labels)
+            # forward
+            with torch.cuda.amp.autocast():
+                    outputs = model(inputs)
+                    outputs = torch.sigmoid(outputs)
+                    assert (outputs.shape == labels.shape)
+                    loss = criterion(outputs, labels)
 
-        valid_acc.update(metrics.dice_coeff(outputs, labels), outputs.size(0))
-        valid_loss.update(loss.data.item(), outputs.size(0))
-        if idx == 0:
-            logger.log_images(inputs.cpu(), labels.cpu(), outputs.cpu(), step)
-    logger.log_validation(valid_loss.avg, valid_acc.avg, step)
+            valid_acc.update(metrics.dice_coeff(outputs, labels), outputs.size(0))
+            valid_loss.update(loss.data.item(), outputs.size(0))
+            if idx == 0:
+                logger.log_images(inputs.cpu(), labels.cpu(), outputs.cpu(), step)
+        logger.log_validation(valid_loss.avg, valid_acc.avg, step)
 
-    print("Validation Loss: {:.4f} Acc: {:.4f}".format(valid_loss.avg, valid_acc.avg))
-    return {"valid_loss": valid_loss.avg, "valid_acc": valid_acc.avg}
+        print("Validation Loss: {:.4f} Acc: {:.4f}".format(valid_loss.avg, valid_acc.avg))
+        return {"valid_loss": valid_loss.avg, "valid_acc": valid_acc.avg}
 
 def col(batchs):
     '''custom data batch function

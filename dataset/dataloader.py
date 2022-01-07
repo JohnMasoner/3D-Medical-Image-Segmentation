@@ -16,7 +16,7 @@ class MedDataSets3D(torch.utils.data.Dataset):
         )[length[0]:length[-1]]
     
     def __getitem__(self, idx):
-        img, msk = self.read_img(self.file_dir[idx], 'GTV-NP')
+        img, msk = self.read_npy(self.file_dir[idx], 'GTV-NP')
         # tsf = self.transf(image=img.astype('uint8'), mask=msk)
         # img, msk = tsf['image'], tsf['mask']
         # sample = {"image": img.astype(np.float32), "label": msk.astype(np.float32)}
@@ -32,7 +32,7 @@ class MedDataSets3D(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.file_dir)
     
-    def read_img(self, filename, msk_type):
+    def read_dicom(self, filename, msk_type):
         ''' read medical image
         Args:
             filename: the child data file directory
@@ -58,6 +58,11 @@ class MedDataSets3D(torch.utils.data.Dataset):
         image = torch.from_numpy(image)
         label_list = torch.from_numpy(label_list)
         return image, label_list
+
+    def read_npy(self, filename):
+        image = torch.from_numpy(np.load(os.path.join(filename, 'img.npy')))
+        label = torch.from_numpy(np.load(os.path.join(filename, 'msk.npy')))
+        return image, label
     
     def crop_slices(self, label_list):
         ''' *crop the img and msk based on label*
