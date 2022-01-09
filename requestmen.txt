@@ -1,0 +1,6 @@
+torch
+torchvision
+glob
+SimpleITK
+opencv-python
+tqdm
