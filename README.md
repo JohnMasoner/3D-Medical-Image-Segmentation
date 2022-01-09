@@ -35,6 +35,6 @@ To get a local copy up and running follow these simple example steps.
 - [ ] test
 - [ ] more models
 
-For more details or any questions, please feel easy to contact us by email [Mason](masoner6429@gmail.com).
+For more details or any questions, please feel easy to contact us by email <masoner6429@gmail.com>.
 
 
