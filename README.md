@@ -1,5 +1,7 @@
 # 3D-Medical-Image-Segmentation
 
+I prefer to use my other repo [MedicalZoo](https://github.com/JohnMasoner/MedicalZoo) which includes this library along with algorithms for 2D models and multimodal medical image segmentation. Of course this repo is more pure.
+
 ## About The Project
 
 Inspired by [Pytorch-Medical-Segmentation](https://github.com/MontaEllis/Pytorch-Medical-Segmentation) of [Ellis](https://github.com/MontaEllis),I wrote this project for 3D medical imaging.I didn't use Torchio as the Dataloader for this project, I just used numpy as the Dataloader,which improved the efficiency of data reading.
