@@ -47,7 +47,7 @@ def read_img(filename, msk_type):
     image = np.vstack(img_list)[:,:,:,np.newaxis]
     return image, label_list
 
-image, label_list = read_img(r'E:\Process_Data\Bai^Li ping-RT180669\CT','GTV-NP')
+image, label_list = read_img(r'E:\Process_Data\\CT','xxxx')
 print(image.shape, label_list.shape)
 for i,info in enumerate(label_list):
     if info > 0:
